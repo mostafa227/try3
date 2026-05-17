@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}About VidFetch - No FFmpeg Video Downloader{% endblock %}
+
+{% block content %}
+<div class="container about-page">
+    <h1 class="page-title">About VidFetch</h1>
+    
+    <div class="about-grid">
+        <div class="about-card glass" id="mission">
+            <h2>🎯 Mission</h2>
+            <p>VidFetch provides a simple, privacy-respecting way to download videos from popular platforms without requiring any local software or FFmpeg. Our server uses pre-merged formats only — no merging, no conversion, just direct downloads.</p>
+        </div>
+        
+        <div class="about-card glass" id="privacy">
+            <h2>🔒 Privacy</h2>
+            <p>We do not log your downloads, store any files permanently, or track behavior. All downloaded videos are automatically deleted from our server after you receive them. No third-party analytics.</p>
+        </div>
+        
+        <div class="about-card glass" id="legal">
+            <h2>⚖️ Legal</h2>
+            <p>VidFetch is a tool for downloading videos you have permission to save. Respect copyright laws and platform terms of service. We are not responsible for misuse.</p>
+        </div>
+    </div>
+    
+    <div class="sidebar-section">
+        <div class="info-sidebar glass">
+            <h3>Supported Platforms (1000+)</h3>
+            <ul>
+                <li>YouTube (1080p/720p/480p combined)</li>
+                <li>TikTok (no watermark option)</li>
+                <li>Facebook Watch</li>
+                <li>Twitter/X videos</li>
+                <li>Vimeo</li>
+                <li>Twitch Clips</li>
+                <li>Dailymotion</li>
+                <li>Bilibili, Reddit, Rumble, and many more</li>
+            </ul>
+            <p class="note">* Instagram, Netflix, and DRM-protected sites are not supported due to login requirements.</p>
+        </div>
+        
+        <div class="info-sidebar glass">
+            <h3>Tech Stack</h3>
+            <ul>
+                <li>Backend: Flask (Python 3)</li>
+                <li>Extraction: yt-dlp (no FFmpeg, combined formats only)</li>
+                <li>Frontend: Vanilla JS, CSS3, HTML5</li>
+                <li>Real-time: Server-Sent Events (SSE)</li>
+                <li>Storage: In-memory jobs + temp files</li>
+            </ul>
+        </div>
+        
+        <div class="info-sidebar glass stats">
+            <h3>Statistics</h3>
+            <p>⚡ Average download speed: up to 50 MB/s</p>
+            <p>📁 Max file size: 4GB (temporary)</p>
+            <p>🌐 Global CDN delivery</p>
+            <p>🕒 Auto-cleanup every download</p>
+        </div>
+    </div>
+    
+    <div class="footer-note glass">
+        <p>VidFetch is powered by <strong>yt-dlp</strong> and designed to respect platform limitations. Always follow fair usage policies.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}VidFetch - Fast Video Downloader for 1000+ Sites{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-orbs">
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
+        <div class="orb orb3"></div>
+    </div>
+    <div class="container hero-content">
+        <h1 class="hero-title fade-up">Download Videos from <span class="gradient-text">1000+ Platforms</span></h1>
+        <p class="hero-subtitle fade-up">YouTube, TikTok, Facebook, Twitter, Vimeo and more — No software install, completely free</p>
+        
+        <div class="url-form-container fade-up">
+            <form id="download-form" class="url-form" action="{{ url_for('download_page') }}" method="GET">
+                <div class="input-group">
+                    <input type="url" name="url" id="url-input" placeholder="Paste video link here..." required>
+                    <button type="button" id="paste-btn" class="paste-btn">📋 Paste</button>
+                    <button type="submit" class="submit-btn">Fetch Video →</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="platform-grid fade-up">
+            <span>YouTube</span><span>TikTok</span><span>Instagram*</span><span>Facebook</span><span>Twitter</span><span>Vimeo</span><span>Twitch</span><span>Dailymotion</span><span>+1000 more</span>
+        </div>
+    </div>
+</section>
+
+<section class="how-it-works">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h3>Paste URL</h3>
+                <p>Copy any video link from supported sites</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h3>Select Quality</h3>
+                <p>Choose resolution (1080p, 720p, 480p) or audio only</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h3>Download</h3>
+                <p>Get your merged video instantly — no extra steps</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <h2 class="section-title">Why Choose VidFetch?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>No FFmpeg Needed</h3>
+                <p>Direct combined formats — download pre-merged video+audio instantly</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Private & Secure</h3>
+                <p>No logs, no storage — files are deleted after your download</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Mobile Ready</h3>
+                <p>Fully responsive design works on any device</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>1000+ Sites</h3>
+                <p>Supports YouTube, TikTok, Instagram*, Facebook, Twitter, Reddit and more</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎵</div>
+                <h3>Audio Only Mode</h3>
+                <p>Extract music as high-quality audio files</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3>Real-time Progress</h3>
+                <p>Live download progress with SSE technology</p>
+            </div>
+        </div>
+        <p class="footnote">* Instagram requires login — we recommend YouTube or TikTok instead</p>
+    </div>
+</section>
+
+<section class="cta">
+    <div class="container">
+        <h2>Ready to Download?</h2>
+        <p>No registration, no watermarks. Just paste your link and go.</p>
+        <a href="#hero" class="cta-btn scroll-trigger">Get Started →</a>
+    </div>
+</section>
+
+<script>
+    document.getElementById('paste-btn')?.addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            document.getElementById('url-input').value = text;
+        } catch (err) {
+            alert('Could not read clipboard. Please paste manually.');
+        }
+    });
+    
+    document.querySelector('.scroll-trigger')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelector('.url-form-container')?.scrollIntoView({ behavior: 'smooth' });
+    });
+</script>
+{% endblock %}

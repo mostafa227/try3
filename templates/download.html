@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Download {{ title or 'Video' }} - VidFetch{% endblock %}
+
+{% block content %}
+<div class="container download-page">
+    <div class="mini-form">
+        <form action="{{ url_for('download_page') }}" method="GET">
+            <input type="url" name="url" value="{{ url }}" placeholder="Paste another URL...">
+            <button type="submit">Fetch</button>
+        </form>
+    </div>
+
+    {% if error %}
+    <div class="error-card glass">
+        <div class="error-icon">⚠️</div>
+        <h3>Failed to load video info</h3>
+        <p>{{ error }}</p>
+        <a href="{{ url_for('index') }}" class="btn-secondary">Try Again</a>
+    </div>
+    {% else %}
+
+    <div class="video-card glass" id="video-info" data-url="{{ url }}">
+        <div class="video-thumbnail">
+            <img src="{{ thumbnail or 'https://placehold.co/400x225/1a1a2e/ffffff?text=No+Thumbnail' }}" alt="Thumbnail">
+            <span class="duration-badge">{{ "%d:%02d" | format((duration//60) if duration else 0, (duration%60) if duration else 0) }}</span>
+        </div>
+        <div class="video-details">
+            <h2>{{ title }}</h2>
+            <div class="meta">
+                <span>👤 {{ uploader }}</span>
+                <span>👁️ {{ '{:,}'.format(views) if views else 'N/A' }} views</span>
+                <span class="platform-badge">{{ platform }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="quality-section glass">
+        <h3>Select Quality</h3>
+        <div class="quality-buttons" id="quality-buttons">
+            {% for q in qualities %}
+            <button data-format-id="{{ q.format_id }}" data-height="{{ q.height }}" class="quality-btn">
+                {{ q.label }}
+                {% if q.filesize %}<small>({{ (q.filesize / 1048576)|round(1) }} MB)</small>{% endif %}
+            </button>
+            {% endfor %}
+            {% if not qualities %}
+            <p class="no-qualities">No combined formats found. Try audio only.</p>
+            {% endif %}
+        </div>
+        
+        <div class="audio-option">
+            <label>
+                <input type="checkbox" id="audio-only-checkbox"> 🎵 Audio Only (M4A/WebM - No conversion)
+            </label>
+        </div>
+        
+        <button id="download-btn" class="download-action" {% if not qualities %}disabled{% endif %}>Download</button>
+        
+        <div id="progress-container" style="display: none;">
+            <div class="progress-phase" id="progress-phase">Connecting...</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progress-fill" style="width: 0%;"></div>
+            </div>
+            <div class="progress-percent" id="progress-percent">0%</div>
+        </div>
+        
+        <div id="error-message" class="error-message" style="display: none;"></div>
+    </div>
+    
+    <div class="instructions glass">
+        <h4>💡 Tips</h4>
+        <ul>
+            <li>✅ Videos are pre-merged — no FFmpeg required</li>
+            <li>🎥 For higher qualities, try YouTube or TikTok</li>
+            <li>🔊 Audio-only downloads direct streams (best quality without re-encoding)</li>
+            <li>🔄 Download progress updates in real-time</li>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    (function() {
+        const downloadBtn = document.getElementById('download-btn');
+        const qualityBtns = document.querySelectorAll('.quality-btn');
+        const audioCheckbox = document.getElementById('audio-only-checkbox');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressPercent = document.getElementById('progress-percent');
+        const progressPhase = document.getElementById('progress-phase');
+        const errorDiv = document.getElementById('error-message');
+        let selectedFormatId = null;
+        let currentJobId = null;
+        let eventSource = null;
+        
+        // Select first quality by default
+        if (qualityBtns.length > 0) {
+            qualityBtns[0].classList.add('active');
+            selectedFormatId = qualityBtns[0].dataset.formatId;
+        }
+        
+        qualityBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                qualityBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedFormatId = btn.dataset.formatId;
+                if (audioCheckbox) audioCheckbox.checked = false;
+                downloadBtn.disabled = false;
+            });
+        });
+        
+        audioCheckbox?.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                qualityBtns.forEach(b => b.classList.remove('active'));
+                selectedFormatId = null;
+                downloadBtn.disabled = false;
+            } else if (qualityBtns.length > 0 && !selectedFormatId) {
+                qualityBtns[0].classList.add('active');
+                selectedFormatId = qualityBtns[0].dataset.formatId;
+            }
+        });
+        
+        function closeEventSource() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+        }
+        
+        async function startDownload() {
+            const url = document.getElementById('video-info')?.dataset.url;
+            if (!url) return;
+            
+            const audioOnly = audioCheckbox?.checked || false;
+            const payload = {
+                url: url,
+                audio_only: audioOnly,
+                format_id: audioOnly ? null : selectedFormatId
+            };
+            
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Starting...';
+            progressContainer.style.display = 'block';
+            errorDiv.style.display = 'none';
+            progressFill.style.width = '0%';
+            progressPercent.textContent = '0%';
+            progressPhase.textContent = 'Connecting...';
+            
+            try {
+                const response = await fetch('{{ url_for("start_download") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (!response.ok || data.error) {
+                    throw new Error(data.error || 'Failed to start download');
+                }
+                currentJobId = data.job_id;
+                listenProgress(currentJobId);
+            } catch (err) {
+                showError(err.message);
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = 'Download';
+                progressContainer.style.display = 'none';
+            }
+        }
+        
+        function listenProgress(jobId) {
+            closeEventSource();
+            eventSource = new EventSource(`{{ url_for("progress_stream", job_id="") }}${jobId}`);
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.error) {
+                    showError(data.error);
+                    finishDownload(false);
+                    return;
+                }
+                if (data.status === 'ready') {
+                    progressPhase.textContent = 'Complete! Fetching file...';
+                    progressFill.style.width = '100%';
+                    progressPercent.textContent = '100%';
+                    finishDownload(true);
+                } else if (data.status === 'error') {
+                    showError(data.error || 'Download failed');
+                    finishDownload(false);
+                } else {
+                    if (data.progress !== undefined) {
+                        const percent = Math.min(data.progress, 100);
+                        progressFill.style.width = `${percent}%`;
+                        progressPercent.textContent = `${Math.round(percent)}%`;
+                    }
+                    if (data.phase) progressPhase.textContent = data.phase;
+                }
+            };
+            eventSource.onerror = () => {
+                showError('Connection lost. Try again.');
+                finishDownload(false);
+            };
+        }
+        
+        async function finishDownload(success) {
+            closeEventSource();
+            if (success && currentJobId) {
+                window.location.href = `{{ url_for("download_file", job_id="") }}${currentJobId}`;
+                setTimeout(() => {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = 'Download';
+                    progressContainer.style.display = 'none';
+                    currentJobId = null;
+                }, 2000);
+            } else {
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = 'Retry Download';
+                currentJobId = null;
+            }
+        }
+        
+        function showError(msg) {
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+            progressContainer.style.display = 'none';
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = 'Download';
+        }
+        
+        downloadBtn.addEventListener('click', startDownload);
+    })();
+</script>
+{% endblock %}
